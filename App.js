@@ -1,28 +1,44 @@
 import React from "react";
-import { View, Text, StyleSheet, Button, TextInput, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions
+} from "react-native";
 import axios from "axios";
 import { createStackNavigator, createAppContainer } from "react-navigation";
+import HTML from "react-native-render-html";
 
 class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {label: '' };
+    this.state = { label: "" };
   }
   render() {
     return (
       <View style={styles.container}>
         <Text>Job Search</Text>
         <TextInput
-            style={styles.textInput}
-            editable = {true}
-            onChangeText={(text) => this.setState({
+          style={styles.textInput}
+          editable={true}
+          onChangeText={text =>
+            this.setState({
               label: text
-            })}
-            placeholder='Search'
-          />
+            })
+          }
+          placeholder="Search"
+        />
         <Button
           title="Button"
-          onPress={() => this.props.navigation.navigate("ListOfJobs", {search: this.state.label})}
+          onPress={() =>
+            this.props.navigation.navigate("ListOfJobs", {
+              search: this.state.label
+            })
+          }
         />
       </View>
     );
@@ -32,18 +48,21 @@ class HomeScreen extends React.Component {
 class ListOfJobs extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { jobs: [], search: this.props.navigation.state.params.search};
+    this.state = {
+      jobs: [],
+      search: this.props.navigation.state.params.search
+    };
   }
 
   componentDidMount() {
     axios
       .get(`https://jobs.github.com/positions.json`)
       .then(res => {
-        let info: [];
+        let info = [];
         const arr = res.data;
-        for (let index = 0; index < arr.length; index += 1){
-            info.push(arr[index]);
-        } 
+        for (let index = 0; index < arr.length; index += 1) {
+          if (arr[index].type == this.state.search) info.push(arr[index]);
+        }
 
         this.setState(() => ({
           jobs: info
@@ -54,25 +73,42 @@ class ListOfJobs extends React.Component {
 
   render() {
     return (
-      <ScrollView style={{flex:1}}>
-        <Text>{this.state.search}</Text>
+      <ScrollView style={{ flex: 1 }}>
         {this.state.jobs.map((data, index) => (
-          <Text key={index}>{data.title}</Text>
+          <TouchableOpacity
+            key={index}
+            style={{
+              borderColor: "gray",
+              borderWidth: 2,
+              alignItems: "center"
+            }}
+            onPress={() => this.props.navigation.navigate("JobDetail", {data: data})}
+          >
+            <Text style={styles.type}>{data.type}</Text>
+            <Text style={styles.title}>{data.title}</Text>
+            <Text style={styles.description} numberOfLines={2}>{data.description}</Text>
+          </TouchableOpacity>
         ))}
-        <Button
-          title="Go to Job Detail... again"
-          onPress={() => this.props.navigation.navigate("JobDetail")}
-        />
       </ScrollView>
     );
   }
 }
 
 class JobDetail extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      data: this.props.navigation.state.params.data
+    };
+  }
   render() {
     return (
       <View style={styles.container}>
-        <Text>Details Screen</Text>
+        <ScrollView>
+          <Text style={{fontWeight: "bold", fontSize: 16}}>{this.state.data.type}</Text>
+          <Text style={{fontSize: 16}}>{this.state.data.title}</Text>
+          <HTML html={this.state.data.description} imagesMaxWidth={Dimensions.get("window").width} />
+        </ScrollView>
       </View>
     );
   }
@@ -97,9 +133,20 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   textInput: {
-    borderColor: 'blue',
+    borderColor: "gray",
     borderWidth: 2
   },
+  type: {
+    fontWeight: "bold",
+    fontSize: 16
+  },
+  title: {
+    fontSize: 16
+  },
+  description: {
+    color: "gray",
+    fontSize: 14
+  }
 });
 
 export default createAppContainer(AppNavigator);
